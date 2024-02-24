@@ -29,7 +29,7 @@ interface Props {
 }
 
 const Question = ({ mongoUserId }: Props) => {
-  const editorRef = useRef(null);
+  const editorRef = useRef<any>(null);
   const router = useRouter();
   const pathname = usePathname();
 
