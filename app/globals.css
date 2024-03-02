@@ -43,7 +43,7 @@ body {
     );
   }
   .tab {
-    @apply min-h-full dark:bg-dark-400 bg-light-800 text-light-5;
+    @apply min-h-full dark:bg-dark-400 bg-light-800 text-light-500;
   }
   .no-focus {
     @apply focus-visible:right-0 focus:outline-none focus-visible:ring-transparent;
@@ -61,12 +61,14 @@ body {
     rgba(229, 237, 255, 0.25) 100%
   );
 }
+
 .primary-text-gradient {
   background: linear-gradient(129deg, #ff7000 0%, #e2995f 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 3px;
   height: 3px;

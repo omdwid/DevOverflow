@@ -5,17 +5,19 @@ import Metric from "../shared/Metric";
 import { getTimeStamp, formatLargeNumber } from "@/lib/utils";
 
 interface Props {
+  clerkId?: string
   _id: string;
   title: string;
   tags: { _id: string; name: string }[];
-  author: { _id: string; name: string; picture: string };
-  upvotes: number;
+  author: { _id: string; name: string; picture: string, clerkId: string };
+  upvotes: string[];
   views: number;
   answers: Array<object>;
   createdAt: Date;
 }
 
 const QuestionCard = ({
+  clerkId,
   _id,
   title,
   tags,
@@ -52,18 +54,18 @@ const QuestionCard = ({
 
       <div className="flex-between mt-6 w-full flex-wrap gap-3">
         <Metric
-          imgUrl="/assets/icons/avatar.svg"
+          imgUrl={author.picture}
           alt="User"
           value={author.name}
           title={`- asked ${getTimeStamp(createdAt)}`}
-          href={`/profile/${author._id}`}
+          href={`/profile/${author.clerkId}`}
           isAuthor
           textStyles="body-medium text-dark400_light700 "
         />
         <Metric
           imgUrl="/assets/icons/like.svg"
           alt="Upvotes"
-          value={formatLargeNumber(upvotes)}
+          value={formatLargeNumber(upvotes.length)}
           title="Votes"
           textStyles="small-medium text-dark400_light800 "
         />
