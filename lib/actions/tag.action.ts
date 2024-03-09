@@ -1,12 +1,9 @@
 "use server";
-
-import { join } from "path";
 import Tag, { ITag } from "../database/tag.model";
 import User from "../database/user.model";
 import { connectToDatabase } from "../mongoose";
 import {
   GetAllTagsParams,
-  GetQuestionByIdParams,
   GetQuestionsByTagIdParams,
   GetTopInteractedTagsParams,
 } from "./shared.types";
@@ -17,7 +14,38 @@ export async function getAllTags(params: GetAllTagsParams) {
   try {
     await connectToDatabase();
 
-    const tags = await Tag.find({});
+    const { searchQuery, filter } = params;
+
+    const query: FilterQuery<ITag> = {};
+
+    if (searchQuery) {
+      query.$or = [{ name: { $regex: new RegExp(searchQuery, "i") } }];
+    }
+
+    let sortOptions = {};
+
+    switch (filter) {
+      case "popular":
+        sortOptions = { questions: -1 };
+        break;
+
+      case "recent":
+        sortOptions = { createdAt: -1 };
+        break;
+
+      case "name":
+        sortOptions = { name: 1 };
+        break;
+
+      case "old":
+        sortOptions = { createdAt: 1 };
+        break;
+
+      default:
+        break;
+    }
+
+    const tags = await Tag.find(query).sort(sortOptions);
 
     return { tags };
   } catch (error) {
@@ -78,7 +106,26 @@ export async function getQuestionsByTagId(params: GetQuestionsByTagIdParams) {
 
     const questions = tag.questions;
 
-    return { tagTitle: tag.name , questions };
+    return { tagTitle: tag.name, questions };
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+export async function getTopPopularTags() {
+  try {
+    await connectToDatabase();
+
+    const popularTags = await Tag.aggregate([
+      {
+        $project: { name: 1, numberOfQuestions: { $size: "$questions" } },
+      },
+      { $sort: { numberOfQuestions: -1 } },
+      { $limit: 5 },
+    ]);
+
+    return popularTags;
   } catch (error) {
     console.log(error);
     throw error;

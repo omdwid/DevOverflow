@@ -7,20 +7,56 @@ import User from "../database/user.model";
 import { connectToDatabase } from "../mongoose";
 import {
   CreateQuestionParams,
+  DeleteQuestionParams,
+  EditQuestionParams,
   GetQuestionByIdParams,
   GetQuestionsParams,
   QuestionVoteParams,
 } from "./shared.types";
 import Answer from "../database/answer.model";
+import Interaction from "../database/interaction.model";
+import { FilterQuery } from "mongoose";
 
 export async function getQuestions(params: GetQuestionsParams) {
   try {
     await connectToDatabase();
 
-    const questions = await Question.find({})
+    const { searchQuery, filter } = params;
+
+    const query: FilterQuery<typeof Question> = {};
+
+    if (searchQuery) {
+      query.$or = [
+        {
+          title: { $regex: new RegExp(searchQuery, "i") },
+        },
+        {
+          content: { $regex: new RegExp(searchQuery, "i") },
+        },
+      ];
+    }
+
+    let sortOptions = {};
+
+    switch (filter) {
+      case "newest":
+        sortOptions = { createdAt: -1 };
+        break;
+      case "frequent":
+        sortOptions = { views: -1 };
+        break;
+      case "unanswered":
+        query.answers = { $size: 0 };
+        break;
+
+      default:
+        break;
+    }
+
+    const questions = await Question.find(query)
       .populate({ path: "tags", model: Tag })
       .populate({ path: "author", model: User })
-      .sort({ createdAt: -1 });
+      .sort(sortOptions);
 
     return { questions };
   } catch (error) {
@@ -118,7 +154,7 @@ export async function upvoteQuestion(params: QuestionVoteParams) {
       new: true,
     });
 
-    if(!question){
+    if (!question) {
       throw new Error("Question not found");
     }
 
@@ -158,13 +194,73 @@ export async function downvoteQuestion(params: QuestionVoteParams) {
       new: true,
     });
 
-    if(!question){
+    if (!question) {
       throw new Error("Question not found");
     }
 
     // TODO: increment user reputation
 
     revalidatePath(path);
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+export async function deleteQuestion(params: DeleteQuestionParams) {
+  try {
+    await connectToDatabase();
+
+    const { questionId, path } = params;
+
+    await Question.deleteOne({ _id: questionId });
+
+    await Answer.deleteMany({ question: questionId });
+
+    await Interaction.deleteMany({ question: questionId });
+
+    await Tag.updateMany(
+      { questions: questionId },
+      { $pull: { questions: questionId } }
+    );
+
+    revalidatePath(path);
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+export async function editQuestion(params: EditQuestionParams) {
+  try {
+    await connectToDatabase();
+
+    const { questionId, title, content, path } = params;
+
+    const question = await Question.findById(questionId).populate("tags");
+
+    if (!question) {
+      throw new Error("question not found");
+    }
+
+    question.title = title;
+    question.content = content;
+
+    await question.save();
+
+    revalidatePath(path);
+  } catch (error) {}
+}
+
+export async function getTopQuestions() {
+  try {
+    await connectToDatabase();
+
+    const topQuestions = await Question.find({})
+      .sort({ views: -1, upvotes: -1 })
+      .limit(5);
+
+    return topQuestions;
   } catch (error) {
     console.log(error);
     throw error;

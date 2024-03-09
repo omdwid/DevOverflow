@@ -11,8 +11,9 @@ import { getUserById } from "@/lib/actions/user.action";
 import { auth } from "@clerk/nextjs";
 import AllAnswers from "@/components/shared/AllAnswers";
 import Votes from "@/components/shared/Votes";
+import { URLProps } from "@/types";
 
-const Page = async ({ params, searchParams }) => {
+const Page = async ({ params, searchParams }: URLProps) => {
   const result = await getQuestionById({ questionId: params.id });
 
   const { userId: clerkId } = auth();
@@ -100,6 +101,8 @@ const Page = async ({ params, searchParams }) => {
         questionId={result._id}
         authorId={mongoUser._id}
         totalAnswers={result.answers.length}
+        page={Number(searchParams?.page)}
+        filter={searchParams?.filter}
       />
       <Answer
         question={result.content}

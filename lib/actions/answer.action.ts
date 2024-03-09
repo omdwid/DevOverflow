@@ -4,7 +4,14 @@ import { revalidatePath } from "next/cache";
 import Answer from "../database/answer.model";
 import Question from "../database/question.model";
 import { connectToDatabase } from "../mongoose";
-import { AnswerVoteParams, CreateAnswerParams, GetAnswersParams } from "./shared.types";
+import {
+  AnswerVoteParams,
+  CreateAnswerParams,
+  DeleteAnswerParams,
+  GetAnswersParams,
+} from "./shared.types";
+import Interaction from "../database/interaction.model";
+import Tag from "../database/tag.model";
 
 export async function createAnswer(params: CreateAnswerParams) {
   try {
@@ -36,17 +43,38 @@ export async function getAnswers(params: GetAnswersParams) {
   try {
     await connectToDatabase();
 
-    const { questionId } = params;
+    const { questionId, sortBy, page } = params;
+
+    let sortOptions = {};
+
+    switch (sortBy) {
+      case "highestUpvotes":
+        sortOptions = { upvotes: -1 }
+        break;
+      case "lowestUpvotes":
+        sortOptions = { upvotes: 1 }
+        break;
+
+      case "recent":
+        sortOptions = { createdAt: -1 }
+        break;
+
+      case "old":
+        sortOptions = { createdAt: 1 }
+        break;
+
+      default:
+        break;
+    }
 
     const answers = await Answer.find({
       question: questionId,
     })
       .populate("author", "_id clerkId name picture")
-      .sort({ createdAt: -1 });
+      .sort(sortOptions);
 
     // add the answer to the question object of the database
     return { answers };
-    
   } catch (error) {
     console.log(error);
     throw error;
@@ -80,7 +108,7 @@ export async function upvoteAnswer(params: AnswerVoteParams) {
       new: true,
     });
 
-    if(!answer){
+    if (!answer) {
       throw new Error("Answer not found");
     }
 
@@ -120,12 +148,41 @@ export async function downvoteAnswer(params: AnswerVoteParams) {
       new: true,
     });
 
-    if(!answer){
+    if (!answer) {
       throw new Error("Answer not found");
     }
 
     // TODO: increment user reputation
     revalidatePath(path);
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+export async function deleteAnswer(params: DeleteAnswerParams) {
+  try {
+    await connectToDatabase();
+
+    const { answerId, path } = params;
+
+    const answer = await Answer.findById(answerId);
+
+    if (!answer) {
+      throw new Error("ans not found");
+    }
+
+    await Answer.deleteOne({ _id: answerId });
+
+    await Question.updateMany(
+      { _id: answer.question },
+      { $pull: { answers: answerId } }
+    );
+
+    await Interaction.deleteMany({ answer: answerId });
+
+    revalidatePath(path);
+    revalidatePath(`/question/${answer.question._id}`);
   } catch (error) {
     console.log(error);
     throw error;

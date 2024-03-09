@@ -2,59 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import RenderTag from "./RenderTag";
+import { getTopQuestions } from "@/lib/actions/question.action";
+import { getTopPopularTags } from "@/lib/actions/tag.action";
 
-const popularTags: {_id: string, name: string, totalQuestions: number}[] = [
-  {
-    _id: "1",
-    name: "javascript",
-    totalQuestions: 5,
-  },
-  {
-    _id: "2",
-    name: "javascript",
-    totalQuestions: 5,
-  },
-  {
-    _id: "3",
-    name: "javascript",
-    totalQuestions: 5,
-  },
-  {
-    _id: "4",
-    name: "javascript",
-    totalQuestions: 5,
-  },
-  {
-    _id: "5",
-    name: "javascript",
-    totalQuestions: 5,
-  },
-];
+const RightSidebar = async () => {
+  const hotQuestions = await getTopQuestions();
+  const popularTags = await getTopPopularTags();
 
-const hotQuestions: {_id: string, title: string}[] = [
-  {
-    _id: "1",
-    title:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Iure, temporibus.",
-  },
-  {
-    _id: "2",
-    title:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Iure, temporibus.",
-  },
-  {
-    _id: "3",
-    title:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Iure, temporibus.",
-  },
-  {
-    _id: "4",
-    title:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Iure, temporibus.",
-  },
-];
-
-const RightSidebar = () => {
   return (
     <section className="background-light900_dark200 light-border sticky right-0 top-0 flex h-screen flex-col overflow-y-auto border-l p-6 pt-36 shadow-light-300 dark:shadow-none max-xl:hidden w-[350px] custom-scrollbar">
       <div>
@@ -64,7 +18,7 @@ const RightSidebar = () => {
             return (
               <Link
                 key={question._id}
-                href={`/questions/${question._id}`}
+                href={`/question/${question._id}`}
                 className="flex cursor-pointer items-center justify-between gap-7"
               >
                 <p className="body-medium text-dark500_light700">
@@ -91,7 +45,7 @@ const RightSidebar = () => {
                 key={tag._id}
                 _id={tag._id}
                 name={tag.name}
-                totalQuestions={tag.totalQuestions}
+                totalQuestions={tag.numberOfQuestions}
                 showCount={true}
               />
             );
