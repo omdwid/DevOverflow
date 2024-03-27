@@ -43,24 +43,26 @@ export async function getAnswers(params: GetAnswersParams) {
   try {
     await connectToDatabase();
 
-    const { questionId, sortBy, page } = params;
+    const { questionId, sortBy, page = 1, pageSize = 1 } = params;
+
+    const skipAmount = pageSize * (page - 1);
 
     let sortOptions = {};
 
     switch (sortBy) {
       case "highestUpvotes":
-        sortOptions = { upvotes: -1 }
+        sortOptions = { upvotes: -1 };
         break;
       case "lowestUpvotes":
-        sortOptions = { upvotes: 1 }
+        sortOptions = { upvotes: 1 };
         break;
 
       case "recent":
-        sortOptions = { createdAt: -1 }
+        sortOptions = { createdAt: -1 };
         break;
 
       case "old":
-        sortOptions = { createdAt: 1 }
+        sortOptions = { createdAt: 1 };
         break;
 
       default:
@@ -71,10 +73,15 @@ export async function getAnswers(params: GetAnswersParams) {
       question: questionId,
     })
       .populate("author", "_id clerkId name picture")
-      .sort(sortOptions);
+      .sort(sortOptions)
+      .skip(skipAmount)
+      .limit(pageSize);
 
     // add the answer to the question object of the database
-    return { answers };
+    const totalAnswers = await Answer.countDocuments({ question: questionId });
+
+    const isNext = totalAnswers > skipAmount + answers.length;
+    return { answers, isNext };
   } catch (error) {
     console.log(error);
     throw error;
