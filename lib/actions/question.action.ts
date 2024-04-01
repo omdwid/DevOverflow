@@ -64,7 +64,7 @@ export async function getQuestions(params: GetQuestionsParams) {
 
     const totalQuestions = await Question.countDocuments(query);
     const isNext = totalQuestions > skipAmount + questions.length;
-    return { questions , isNext};
+    return { questions, isNext };
   } catch (error) {
     console.log(error);
     throw error;
@@ -128,6 +128,15 @@ export async function createQuestion(params: CreateQuestionParams) {
     await Question.findByIdAndUpdate(question._id, {
       $push: { tags: { $each: tagDocuments } },
     });
+
+    await Interaction.create({
+      user: author,
+      action: "ask_question",
+      question: question._id,
+      tags: tagDocuments,
+    });
+
+    await User.findByIdAndUpdate(author, { $inc: { reputation: 5 } });
 
     revalidatePath(path);
   } catch (error) {}
