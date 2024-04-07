@@ -12,6 +12,7 @@ import {
   GetQuestionByIdParams,
   GetQuestionsParams,
   QuestionVoteParams,
+  RecommendedParams,
 } from "./shared.types";
 import Answer from "../database/answer.model";
 import Interaction from "../database/interaction.model";
@@ -139,7 +140,7 @@ export async function createQuestion(params: CreateQuestionParams) {
     await User.findByIdAndUpdate(author, { $inc: { reputation: 5 } });
 
     revalidatePath(path);
-  } catch (error) {}
+  } catch (error) { }
 }
 
 export async function upvoteQuestion(params: QuestionVoteParams) {
@@ -173,7 +174,15 @@ export async function upvoteQuestion(params: QuestionVoteParams) {
       throw new Error("Question not found");
     }
 
-    // TODO: increment user reputation
+    // TODO: increment user reputation by +1 or -1 / upvoting / downvoting / revoking upvote to the question
+    await User.findByIdAndUpdate(userId, {
+      $inc: { reputation: hasupVoted ? -1 : 1 }
+    })
+
+    // Increment author's reputation by +10 / -10 for receiving an upvote / downvote to the question
+    await User.findByIdAndUpdate(question.author, {
+      $inc: { reputation: hasupVoted ? -10 : 10 }
+    })
 
     revalidatePath(path);
   } catch (error) {
@@ -214,6 +223,13 @@ export async function downvoteQuestion(params: QuestionVoteParams) {
     }
 
     // TODO: increment user reputation
+    await User.findByIdAndUpdate(userId, {
+      $inc: { reputation: hasupVoted ? -2 : 2 },
+    })
+
+    await User.findByIdAndUpdate(question.author, {
+      $inc: { reputation: hasupVoted ? -10 : 10 },
+    })
 
     revalidatePath(path);
   } catch (error) {
@@ -264,7 +280,7 @@ export async function editQuestion(params: EditQuestionParams) {
     await question.save();
 
     revalidatePath(path);
-  } catch (error) {}
+  } catch (error) { }
 }
 
 export async function getTopQuestions() {
@@ -278,6 +294,71 @@ export async function getTopQuestions() {
     return topQuestions;
   } catch (error) {
     console.log(error);
+    throw error;
+  }
+}
+
+export async function getRecommendedQuestions(params: RecommendedParams) {
+  try {
+    await connectToDatabase()
+
+    const { userId, page = 1, pageSize = 20, searchQuery } = params
+    let clerkId = JSON.parse(userId);
+
+    const user = await User.findOne({ clerkId: clerkId.userId })
+
+    if (!user) {
+      throw new Error("User not found")
+    }
+
+    const skipAmount = (page - 1) * pageSize
+
+    const userInteractions = await Interaction.find({ user: user._id }).populate("tags").exec();
+
+    const userTags = userInteractions.reduce((tags, interaction) => {
+      if (interaction.tags) {
+        tags = tags.concat(interaction.tags)
+      }
+
+      return tags;
+    }, []);
+
+    const distinctUserTagIds = [
+      ...new Set(userTags.map((tag) => tag._id.toString())),
+    ];
+
+    const query: FilterQuery<typeof Question> = {
+      $and: [
+        { tags: { $in: distinctUserTagIds } },
+        { author: { $ne: user._id } }
+      ]
+    }
+
+    if (searchQuery) {
+      query.$or = [
+        { title: { $regex: searchQuery, $options: "i" } },
+        { content: { $regex: searchQuery, $options: "i" } }
+      ]
+    }
+
+    const totalQuestions = await Question.countDocuments(query)
+
+    const recommendedQuestions = await Question.find(query).populate({
+      path: "tags",
+      model: Tag
+    })
+    .populate({
+      path: "author",
+      model: User
+    })
+    .skip(skipAmount)
+    .limit(pageSize)
+
+    const isNext = totalQuestions > skipAmount + recommendedQuestions.length;
+
+    return { questions: recommendedQuestions, isNext}
+  } catch (error) {
+    console.error("error getting recommended questions: ", error)
     throw error;
   }
 }

@@ -55,6 +55,7 @@ export const sidebarLinks: SidebarLink[] = [
     label: "Ask a question",
   },
 ];
+
 export const BADGE_CRITERIA = {
   QUESTION_COUNT: {
     BRONZE: 10,

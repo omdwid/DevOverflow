@@ -85,7 +85,7 @@ const GlobalResult = () => {
               result.map((item: any, index: number) => {
                 return (
                   <Link
-                    href={renderLink(item.type, item.id) ?? ''}
+                    href={renderLink(item.type, item.id) ?? ""}
                     key={item.type + item.id + index}
                     className="flex w-full cursor-pointer items-start gap-3 px-5 py-2.5 hover:bg-light-700/50 dark:hover:bg-dark-500/50"
                   >

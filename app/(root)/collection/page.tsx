@@ -9,6 +9,8 @@ import { SearchParamsProps } from "@/types";
 import { auth } from "@clerk/nextjs";
 import React from "react";
 
+
+
 const page = async ({ searchParams }: SearchParamsProps) => {
   const { userId } = auth();
 

@@ -87,7 +87,7 @@ const GlobalSearch = ({ route }: any) => {
             if (e.target.value === "" && isOpen) setIsOpen(false);
           }}
           placeholder="Search Globally"
-          className="paragraph-regular text-dark400_light700 no-focus placeholder background-light800_darkgradient border-none shadow-none outline-none"
+          className="paragraph-regular text-dark400_light700 no-focus placeholder bg-transparent border-none shadow-none outline-none"
         />
       </div>
       {isOpen && <GlobalResult />}
