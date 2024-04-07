@@ -324,7 +324,7 @@ export async function getRecommendedQuestions(params: RecommendedParams) {
     }, []);
 
     const distinctUserTagIds = [
-      ...new Set(userTags.map((tag) => tag._id.toString())),
+      ...new Set<string>(userTags.map((tag: any) => tag._id.toString())),
     ];
 
     const query: FilterQuery<typeof Question> = {
