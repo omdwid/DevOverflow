@@ -300,7 +300,7 @@ export async function getTopQuestions() {
 
 export async function getRecommendedQuestions(params: RecommendedParams) {
   try {
-    await connectToDatabase()
+    await connectToDatabase();
 
     const { userId, page = 1, pageSize = 20, searchQuery } = params
     let clerkId = JSON.parse(userId);
@@ -309,6 +309,7 @@ export async function getRecommendedQuestions(params: RecommendedParams) {
 
     if (!user) {
       throw new Error("User not found")
+      
     }
 
     const skipAmount = (page - 1) * pageSize

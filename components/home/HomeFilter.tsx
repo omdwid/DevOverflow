@@ -4,13 +4,19 @@ import React, { useState } from "react";
 import { Button } from "../ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formUrlQuery } from "@/lib/utils";
+import { useAuth } from "@clerk/nextjs";
 
 const HomeFilter = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [active, setActive] = useState("");
+  const {isSignedIn} = useAuth();
 
   const handleTypeClick = (item: string) => {
+    if(item === "recommended" && !isSignedIn) {
+      router.push('/sign-in')
+      return;
+    }
     if (active === item) {
       setActive("");
       const newUrl = formUrlQuery({
